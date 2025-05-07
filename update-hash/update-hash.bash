@@ -39,7 +39,7 @@ restore_backup_hash() {
     fi
 }
 
-verify_no_stashed_changes() {
+verify_no_staged_changes() {
     if [ -n "$(git diff --cached)" ]; then
         echo "There are stashed changes, aborting"
         return 1
@@ -78,7 +78,7 @@ run() {
         exit 0 
     fi
 
-    if ! verify_no_stashed_changes; then
+    if ! verify_no_staged_changes; then
         if stash_current_changes; then
             trap restore_stashed_changes EXIT
         else 
@@ -120,18 +120,16 @@ run() {
                     sed -i "s;-hash = \"$existing_hash_match\";-hash = \"$new_hash\";g" flake.nix
             
                     if has_arg "amend" "$@"; then
-                        verify_no_stashed_changes || exit 1
                         git add ./flake.nix
-                        git commit --amend --no-edit
+                        git commit --amend --no-edit --no-verify
                     elif has_arg "commit" "$@"; then
-                        verify_no_stashed_changes || exit 1
                         git add ./flake.nix
                         # TODO: Improve argument handling
                         if [ -z "$3" ]; then
                             echo "No commit message provided"
                             exit 1
                         fi
-                        git commit -m "$3" ./flake.nix
+                        git commit -m "$3" ./flake.nix --no-verify
                     fi
                     exit 0
                 fi
